@@ -1,47 +1,52 @@
 package com.insy2s.bibliotheque.service;
 
-import com.insy2s.bibliotheque.domain.Author;
 import com.insy2s.bibliotheque.domain.Book;
-import lombok.Getter;
+import com.insy2s.bibliotheque.exception.BookNotFoundException;
+import com.insy2s.bibliotheque.repository.IBookRepository;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.UUID;
+import java.util.List;
+import java.util.Optional;
 
+@RequiredArgsConstructor
+@Service
 public class BookService {
-    @Getter private final ArrayList<Book> books = new ArrayList<>();
+    private final IBookRepository bookRepository;
 
-    public boolean add(Book book) {
-        return books.add(book);
+    public List<Book> getAllBooks(boolean isAvailable) {
+        return bookRepository.findByIsAvailable(isAvailable);
     }
 
-    public Book getByUuid(UUID uuid) {
-        for (Book book : books) {
-            if (book.getUuid().equals(uuid)) {
-                return book;
-            }
-        }
-        return null;
+
+    public void createBook(@Valid Book book) {
+        bookRepository.save(book);
     }
 
-    public boolean put(UUID uuid, Book book) {
-        for (Book b : books) {
-            if (b.getUuid().equals(uuid)) {
-                if (book.getTitle() != null) {
-                    b.setTitle(book.getTitle());
-                }
-                if (book.getAuteur() != null) {
-                    b.setAuteur(book.getAuteur());
-                }
-                if (book.getYear() != null) {
-                    b.setYear(book.getYear());
-                }
-                return true;
-            }
-        }
-        return false;
+    public void updateBook(long id, @Valid Book book) {
+        Optional<Book> bookOptional = bookRepository.findById(id);
+
+        bookOptional.ifPresentOrElse(
+                bookFound -> {
+                    if (book.getAuthor() != null) {
+                        bookFound.setAuthor(book.getAuthor());
+                    }
+                    if (book.getTitle() != null) {
+                        bookFound.setTitle(book.getTitle());
+                    }
+                    bookRepository.save(bookFound);
+                },
+                () -> {throw new BookNotFoundException("This book doesn't exist");}
+        );
     }
 
-    public boolean delete(UUID uuid) {
-        return books.removeIf(book -> book.getUuid().equals(uuid));
+    public void deleteBook(long id) {
+        Optional<Book> bookOptional = bookRepository.findById(id);
+
+        bookOptional.ifPresentOrElse(
+                bookRepository::delete,
+                () -> {throw new BookNotFoundException("This book doesn't exist");}
+        );
     }
 }

@@ -2,15 +2,13 @@ package com.insy2s.bibliotheque.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,23 +17,23 @@ import java.util.UUID;
 @EqualsAndHashCode
 @ToString
 @Entity
-public class Book {
+@Table(name = "users")
+public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long id;
 
-    @Column(nullable = false)
-    @NotBlank(message = "Title is mandatory.")
-    private String title;
+    @EqualsAndHashCode.Exclude
+    @Column(length = 50, nullable = false)
+    @NotBlank(message = "Name is mandatory.")
+    @Size(max = 50)
+    private String name;
 
-    @Column(nullable = false)
-    @NotBlank(message = "Author is mandatory.")
-    private String author;
+    @Column(unique = true, nullable = false)
+    @Email
+    private String email;
 
-    @Column(nullable = false)
-    private boolean isAvailable = true;
-
-    @OneToMany(mappedBy = "book")
+    @OneToMany(mappedBy = "user")
     @JsonIgnore
     private List<Borrowing> borrowings = new ArrayList<>();
 }
