@@ -4,7 +4,10 @@ import com.insy2s.bibliotheque.domain.Book;
 import com.insy2s.bibliotheque.domain.Borrowing;
 import com.insy2s.bibliotheque.domain.User;
 import com.insy2s.bibliotheque.dto.BookRequestUpdate;
+import com.insy2s.bibliotheque.dto.BorrowingRequestPost;
 import com.insy2s.bibliotheque.dto.BorrowingRequestUpdate;
+import com.insy2s.bibliotheque.dto.BorrowingResponseGet;
+import com.insy2s.bibliotheque.dto.mapper.BorrowingMapper;
 import com.insy2s.bibliotheque.exception.*;
 import com.insy2s.bibliotheque.repository.IBookRepository;
 import com.insy2s.bibliotheque.repository.IBorrowingRepository;
@@ -25,13 +28,13 @@ public class BorrowingService {
     private final BookService bookService;
 
 
-    public void createBorrowing(UUID user, UUID book) {
-        User u = userService.getByUuid(user);
-        Book b = bookService.getByUuid(book);
+    public void createBorrowing(BorrowingRequestPost brp) {
+        User u = userService.getByUuid(brp.user());
+        Book b = bookService.getByUuid(brp.book());
 
         if (borrowingRepository.findByUserAndReturnDateNull(u).size() < 3) {
             borrowingRepository.findByBookAndReturnDateNull(b).ifPresentOrElse(
-                    bookUnavailable -> {throw new BookUnavailableException("This book is unavailable.");},
+                bookUnavailable -> {throw new BookUnavailableException("This book is unavailable.");},
                     () -> {
                         Borrowing borrowing = new Borrowing();
                         borrowing.setBook(b);
@@ -65,8 +68,8 @@ public class BorrowingService {
 
     }
 
-    public List<Borrowing> getAllBorrowingsByUser(UUID user) {
+    public List<BorrowingResponseGet> getAllBorrowingsByUser(UUID user) {
         User u = userService.getByUuid(user);
-        return borrowingRepository.findByUserAndReturnDateNull(u);
+        return BorrowingMapper.borrowingsResponseGet(borrowingRepository.findByUserAndReturnDateNull(u));
     }
 }

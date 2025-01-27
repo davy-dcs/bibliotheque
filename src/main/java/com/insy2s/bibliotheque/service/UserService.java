@@ -32,10 +32,7 @@ public class UserService {
     }
 
     public void userRequestPost(UserRequestPost urp) {
-        createUser(UserMapper.userRequestPost(urp));
-    }
-
-    private void createUser(@Valid User user) {
+        @Valid User user = UserMapper.userRequestPost(urp);
         userRepository.save(user);
     }
 

@@ -1,7 +1,9 @@
 package com.insy2s.bibliotheque.controller;
 
 import com.insy2s.bibliotheque.domain.Borrowing;
+import com.insy2s.bibliotheque.dto.BorrowingRequestPost;
 import com.insy2s.bibliotheque.dto.BorrowingRequestUpdate;
+import com.insy2s.bibliotheque.dto.BorrowingResponseGet;
 import com.insy2s.bibliotheque.service.BorrowingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,9 +20,9 @@ import java.util.UUID;
 public class BorrowingController {
     private final BorrowingService borrowingService;
 
-    @PostMapping("/{user}/{book}")
-    public ResponseEntity<Void> post(@PathVariable UUID user, @PathVariable UUID book) {
-        borrowingService.createBorrowing(user, book);
+    @PostMapping
+    public ResponseEntity<Void> post(@RequestBody BorrowingRequestPost brp) {
+        borrowingService.createBorrowing(brp);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
@@ -31,7 +33,7 @@ public class BorrowingController {
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<List<Borrowing>> getBorrowings(@PathVariable UUID user) {
+    public ResponseEntity<List<BorrowingResponseGet>> getBorrowings(@PathVariable UUID user) {
         return ResponseEntity.status(HttpStatus.OK).body(borrowingService.getAllBorrowingsByUser(user));
     }
 }
