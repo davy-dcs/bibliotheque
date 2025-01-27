@@ -3,6 +3,8 @@ package com.insy2s.bibliotheque.service;
 import com.insy2s.bibliotheque.domain.Book;
 import com.insy2s.bibliotheque.domain.Borrowing;
 import com.insy2s.bibliotheque.domain.User;
+import com.insy2s.bibliotheque.dto.BookRequestUpdate;
+import com.insy2s.bibliotheque.dto.BorrowingRequestUpdate;
 import com.insy2s.bibliotheque.exception.*;
 import com.insy2s.bibliotheque.repository.IBookRepository;
 import com.insy2s.bibliotheque.repository.IBorrowingRepository;
@@ -13,82 +15,58 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
 public class BorrowingService {
     private final IBorrowingRepository borrowingRepository;
-    private final IUserRepository userRepository;
-    private final IBookRepository bookRepository;
+    private final UserService userService;
+    private final BookService bookService;
 
-    public void createBorrowing(long userId, long bookId) {
-        Optional<User> userOptional = userRepository.findById(userId);
-        Optional<Book> bookOptional = bookRepository.findById(bookId);
 
-        if (bookOptional.isEmpty()) {
-            throw new BookNotFoundException("This book doesn't exist.");
+    public void createBorrowing(UUID user, UUID book) {
+        User u = userService.getByUuid(user);
+        Book b = bookService.getByUuid(book);
+
+        if (borrowingRepository.findByUserAndReturnDateNull(u).size() < 3) {
+            borrowingRepository.findByBookAndReturnDateNull(b).ifPresentOrElse(
+                    bookUnavailable -> {throw new BookUnavailableException("This book is unavailable.");},
+                    () -> {
+                        Borrowing borrowing = new Borrowing();
+                        borrowing.setBook(b);
+                        borrowing.setUser(u);
+                        borrowingRepository.save(borrowing);
+                        BookRequestUpdate bru = new BookRequestUpdate(b.getUuid(), null, null, false);
+                        bookService.bookRequestUpdate(bru);
+                    }
+            );
+        } else {
+            throw new BorrowingLimitExceededException("This user has 3 outstanding loans.");
         }
+    }
 
-        userOptional.ifPresentOrElse(
-                userFound -> {
-                    if (borrowingRepository.findByUserAndReturnDateNull(userFound).size() < 3) {
-                        bookOptional.ifPresentOrElse(
-                                bookFound -> {
-                                    borrowingRepository.findByBookAndReturnDateNull(bookFound).ifPresentOrElse(
-                                            bookUnavailable -> {throw new BookUnavailableException("This book is unavailable.");},
-                                            () -> {
-                                                Borrowing borrowing = new Borrowing();
-                                                borrowing.setBook(bookFound);
-                                                borrowing.setUser(userFound);
-                                                borrowingRepository.save(borrowing);
-                                                bookFound.setAvailable(false);
-                                                bookRepository.save(bookFound);
-                                            }
-                                    );
-                                },
-                                () -> {throw new BookNotFoundException("This book doesn't exist.");}
-                        );
-                    } else {
-                        throw new BorrowingLimitExceededException("This user has 3 outstanding loans.");
+
+    public void updateBorrowing(UUID user, UUID book, BorrowingRequestUpdate bru) {
+        User u = userService.getByUuid(user);
+        Book b = bookService.getByUuid(book);
+
+        borrowingRepository.findByUserAndBookAndReturnDateNull(u, b).ifPresentOrElse(
+            borrowingFound -> {
+                    if (bru.returnDate() != null) {
+                        borrowingFound.setReturnDate(bru.returnDate());
+                        borrowingRepository.save(borrowingFound);
+                        BookRequestUpdate bkru = new BookRequestUpdate(b.getUuid(), null, null, true);
+                        bookService.bookRequestUpdate(bkru);
                     }
                 },
-                () -> {throw new UserNotFoundException("This user doesn't exist.");}
+                () -> {throw new BorrowingNotFoundException("This borrowing wasn't found.");}
         );
+
     }
 
-    public void updateBorrowing(long userId, long bookId, @Valid Borrowing borrowing) {
-        Optional<User> userOptional = userRepository.findById(userId);
-        Optional<Book> bookOptional = bookRepository.findById(bookId);
-
-        userOptional.ifPresentOrElse(
-                userFound -> {
-                    bookOptional.ifPresentOrElse(
-                            bookFound -> {
-                                borrowingRepository.findByUserAndBookAndReturnDateNull(userFound, bookFound).ifPresentOrElse(
-                                        borrowingFound -> {
-                                            if (borrowing.getReturnDate() != null) {
-                                                borrowingFound.setReturnDate(borrowing.getReturnDate());
-                                                borrowingRepository.save(borrowingFound);
-                                                bookFound.setAvailable(true);
-                                                bookRepository.save(bookFound);
-                                            }
-                                        },
-                                        () -> {throw new BorrowingNotFoundException("This borrowing wasn't found.");}
-                                );
-                            },
-                            () -> {throw new BookNotFoundException("This book doesn't exist.");}
-                    );
-                },
-                () -> {throw new UserNotFoundException("This user doesn't exist.");}
-        );
-    }
-
-    public List<Borrowing> getAllBorrowingsByUser(long id) {
-        Optional<User> userOptional = userRepository.findById(id);
-        if (userOptional.isPresent()) {
-            return borrowingRepository.findByUserAndReturnDateNull(userOptional.get());
-        } else {
-            throw new UserNotFoundException("This user doesn't exist.");
-        }
+    public List<Borrowing> getAllBorrowingsByUser(UUID user) {
+        User u = userService.getByUuid(user);
+        return borrowingRepository.findByUserAndReturnDateNull(u);
     }
 }

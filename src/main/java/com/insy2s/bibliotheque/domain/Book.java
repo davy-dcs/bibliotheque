@@ -21,8 +21,12 @@ import java.util.UUID;
 @Entity
 public class Book {
     @Id
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long id;
+
+    private UUID uuid;
 
     @Column(nullable = false)
     @NotBlank(message = "Title is mandatory.")
@@ -32,10 +36,20 @@ public class Book {
     @NotBlank(message = "Author is mandatory.")
     private String author;
 
+    @EqualsAndHashCode.Exclude
     @Column(nullable = false)
-    private boolean isAvailable = true;
+    private boolean isAvailable;
 
     @OneToMany(mappedBy = "book")
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     @JsonIgnore
     private List<Borrowing> borrowings = new ArrayList<>();
+
+    @PrePersist()
+    void create(){
+        uuid = UUID.randomUUID();
+        isAvailable = true;
+    }
+
 }

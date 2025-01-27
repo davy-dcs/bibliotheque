@@ -1,6 +1,7 @@
 package com.insy2s.bibliotheque.controller;
 
 import com.insy2s.bibliotheque.domain.Borrowing;
+import com.insy2s.bibliotheque.dto.BorrowingRequestUpdate;
 import com.insy2s.bibliotheque.service.BorrowingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @RestController
@@ -16,20 +18,20 @@ import java.util.List;
 public class BorrowingController {
     private final BorrowingService borrowingService;
 
-    @PostMapping("/{userId}/{bookId}")
-    public ResponseEntity<Void> post(@PathVariable long userId, @PathVariable long bookId) {
-        borrowingService.createBorrowing(userId, bookId);
+    @PostMapping("/{user}/{book}")
+    public ResponseEntity<Void> post(@PathVariable UUID user, @PathVariable UUID book) {
+        borrowingService.createBorrowing(user, book);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @PutMapping("/{userId}/{bookId}")
-    public ResponseEntity<Void> put(@PathVariable long userId, @PathVariable long bookId, @Valid @RequestBody Borrowing borrowing) {
-        borrowingService.updateBorrowing(userId, bookId, borrowing);
+    @PutMapping("/{user}/{book}")
+    public ResponseEntity<Void> put(@PathVariable UUID user, @PathVariable UUID book, @RequestBody BorrowingRequestUpdate bru) {
+        borrowingService.updateBorrowing(user, book, bru);
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<List<Borrowing>> getBorrowings(@PathVariable long userId) {
-        return ResponseEntity.status(HttpStatus.OK).body(borrowingService.getAllBorrowingsByUser(userId));
+    public ResponseEntity<List<Borrowing>> getBorrowings(@PathVariable UUID user) {
+        return ResponseEntity.status(HttpStatus.OK).body(borrowingService.getAllBorrowingsByUser(user));
     }
 }

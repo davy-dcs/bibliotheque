@@ -9,6 +9,7 @@ import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,6 +23,9 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long id;
+
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID uuid;
 
     @EqualsAndHashCode.Exclude
     @Column(length = 50, nullable = false)
